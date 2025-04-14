@@ -1,15 +1,23 @@
-from flask import Flask, render_template, request, redirect, make_response, abort
+from flask import Flask, render_template, request, redirect, make_response, abort, jsonify
 from data import db_session
 from data.news import News
 from data.users import User
+from data import news_api
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
 
 from forms.loginform import LoginForm
 from forms.newsform import NewsForm
 from forms.registrationform import RegisterForm
 
+from flask_restful import reqparse, abort, Api
+import news_restful
+
 
 app = Flask(__name__)
+api = Api(app)
+api.add_resource(news_restful.NewsListResource, '/api/v2/news')
+api.add_resource(news_restful.NewsResource, '/api/v2/news/<int:news_id>')
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
@@ -161,7 +169,18 @@ def cookie_test():
     return res
 
 
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify({'error': 'Not found'}), 404)
+
+
+@app.errorhandler(400)
+def bad_request(_):
+    return make_response(jsonify({'error': 'Bad Request'}), 400)
+
+
 def main():
+    app.register_blueprint(news_api.blueprint)
     app.run()
 
 
